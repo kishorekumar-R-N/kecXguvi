@@ -1,26 +1,39 @@
-name: Deploy to EC2
+name: Multi-Stage CI/CD Pipeline
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  deploy:
+
+  build:
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout Repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step 2: Login to DockerHub
       - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Step 3: SSH into EC2 and Deploy
+      - name: Build Docker Image
+        run: |
+          docker build -t 7kishore/konguxguvi:latest .
+
+      - name: Push Docker Image
+        run: |
+          docker push 7kishore/konguxguvi:latest
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: build   # This makes it multi-stage (deploy waits for build)
+
+    steps:
       - name: SSH and Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -29,18 +42,18 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            echo "Stopping existing container..."
+            echo "Stopping old container"
             sudo docker stop myapp || true
             
-            echo "Removing old container..."
+            echo "Removing old container"
             sudo docker rm myapp || true
             
-            echo "Pulling latest image..."
-            sudo docker pull 7kishore/konguxguvi:v1
+            echo "Pulling latest image"
+            sudo docker pull 7kishore/konguxguvi:latest
             
-            echo "Starting new container..."
+            echo "Starting new container"
             sudo docker run -d \
               -p 80:80 \
               --restart always \
               --name myapp \
-              7kishore/konguxguvi:v1
+              7kishore/konguxguvi:latest
