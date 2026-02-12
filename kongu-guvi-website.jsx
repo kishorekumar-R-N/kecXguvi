@@ -54,7 +54,7 @@ const Navigation = () => {
             </div>
             <div>
               <div className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-pink-400 bg-clip-text text-transparent">
-                Kongu × GUVI
+                Kongu V GUVI
               </div>
               <div className="text-xs text-slate-400 -mt-1">Learn. Build. Excel.</div>
             </div>
